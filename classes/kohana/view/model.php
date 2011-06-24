@@ -57,29 +57,15 @@ class Kohana_View_Model {
 			stream_wrapper_register('kohana.view', 'View_Stream_Wrapper');
 		}
 
-		// Import the view variables to local namespace
-		foreach (get_object_vars($this) as $variable_name => $value) 
-		{
-			if (strpos($variable_name, 'var_') === 0)
-			{
-				$var_name = str_replace('var_', '', $variable_name);
-				if (! isset($$var_name))
-				{
-					$$var_name = $value;
-				}
-			}
-		}
+		// Import the view variables and methods to local namespace
+		$vars = new View_Filter_Var(new ArrayIterator($this->vars()));
 
-		// Import the functions starting with var_
-		foreach (get_class_methods($this) as $method_name) 
+		foreach ($vars as $variable_name)
 		{
-			if (strpos($method_name, 'var_') === 0)
+			$var_name = str_replace('var_', '', $variable_name);
+			if (! isset($$var_name))
 			{
-				$var_name = str_replace('var_', '', $method_name);
-				if (! isset($$var_name))
-				{
-					$$var_name = $this->$method_name();
-				}
+				$$var_name = $this->{$variable_name};
 			}
 		}
 
@@ -305,5 +291,14 @@ class Kohana_View_Model {
 
 		// Combine local and global data and capture the output
 		return $this->capture($this->_file);
+	}
+
+	private function vars()
+	{
+		// Only get keys to combine them with the methods
+		$vars = array_keys(get_object_vars($this));
+		$methods = get_class_methods($this);
+
+		return array_merge($vars, $methods);
 	}
 } // End View
