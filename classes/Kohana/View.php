@@ -21,7 +21,7 @@ abstract class Kohana_View {
 
 		//$class = 'View_'.$class;
 		$class = 'View_'.strtr($view, '/', '_');
-echo $class;
+
 		if ( ! class_exists($class))
 		{
 			$class = 'View';
