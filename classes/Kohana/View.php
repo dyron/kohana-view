@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-abstract class Kohana_View {
+abstract class Kohana_View implements JsonSerializable {
 
 	/**
 	 * Returns a new View object. If you do not define the "file" parameter,
@@ -12,30 +12,35 @@ abstract class Kohana_View {
 	 * @param   array   $data   array of values
 	 * @return  View
 	 */
-	public static function factory($view = NULL, array $data = NULL)
+	public static function factory($file = NULL, array $data = NULL)
 	{
-		if ($view === FALSE)
+		if ($file === FALSE)
 		{
 			return new View(FALSE, $data);
 		}
 
-		//$class = 'View_'.$class;
-		$class = 'View_'.strtr($view, '/', '_');
-echo $class;
+		$class = 'View_'.strtr($file, '/', '_');
+
 		if ( ! class_exists($class))
 		{
 			$class = 'View';
 		}
 
-		return new $class($view, $data);
+		return new $class($file, $data);
 	}
+
+	// View filename
+	protected $_file;
 
 	// Array of local variables
 	protected $_data = array();
 
-	public function __construct($view = NULL, array $data = NULL)
+	public function __construct($file = NULL, array $data = NULL)
 	{
-		$this->set('view', $view);
+		if ($file !== NULL)
+		{
+			$this->file($file);
+		}
 
 		if ($data !== NULL)
 		{
@@ -211,6 +216,31 @@ echo $class;
 		return $this;
 	}
 
+	public function jsonSerialize()
+	{
+		return $this->_data;
+	}
+
+	/**
+	 * Sets and gets the filename for the view.
+	 *
+	 * @param   string $file
+	 * @return  mixed 
+	 */
+	public function file($file = NULL)
+	{
+		if ($file === NULL)
+		{
+			// Act as a getter
+			return $this->_file;
+		}
+
+		// Act as a setter
+		$this->_file = $file;
+
+		return $this;
+	}
+
 	/**
 	 * Magic method, returns the output of [View::render].
 	 *
@@ -248,8 +278,16 @@ echo $class;
 	 *
 	 * @return  object  Template
 	 */
-	public function render(Template $template = NULL)
+	public function render($template = NULL)
 	{
+		/*if (is_string($template))
+		{
+			$template = new Template($template);
+		}
+
+		if ($template instanceof Template)
+		{}*/
+
 		if ($template === NULL)
 		{
 			$template = new Template_Php($this);
