@@ -19,12 +19,7 @@ abstract class Kohana_View implements JsonSerializable {
 			return new View(FALSE, $data);
 		}
 
-<<<<<<< HEAD
 		$class = 'View_'.strtr($file, '/', '_');
-=======
-		//$class = 'View_'.$class;
-		$class = 'View_'.strtr($view, '/', '_');
->>>>>>> 856e47afef0028d94a8e3a856e268e8861077b8e
 
 		if ( ! class_exists($class))
 		{
