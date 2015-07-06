@@ -64,7 +64,7 @@ class Kohana_View_Stream_Wrapper
 	 * Raw output character. Prepend this on any echo variables to
 	 * turn off auto encoding of the output
 	 */
-	protected $_raw_output_char = '^';
+	protected $_raw_output_char = '!';
 
 	/**
 	 * The encoding method to use on view output. Only use the method name
@@ -89,12 +89,12 @@ class Kohana_View_Stream_Wrapper
 			$this->_stat = stat($path);
 			return false;
 		}
-
+                
 		/**
-		 * Convert <?= ?> to long-form <?php echo ?>
+                 * Escape all variables and convert <?= ?> to long-form <?php echo ?>
 		 *
 		 */
-		$regex = '/<\?\=(.+?)\?>/';
+		$regex = '/<\?(\=|php)?(.+?)\?>/s';
 		$this->_data = preg_replace_callback($regex, array($this, '_escape_val'), $this->_data);
 
 		/**
@@ -115,13 +115,31 @@ class Kohana_View_Stream_Wrapper
 	 */
 	protected function _escape_val($matches)
 	{
-		// Use __get() directly on the class
-		$var = str_replace('$', '$this->var_', $matches[1]);
+            // Start by trimming the echoed string
+            $code = trim($matches[2]);
 
-		if (substr(trim($matches[1]), 0, 1) != $this->_raw_output_char)
-			return '<?php echo '.$this->_encode_method.'('.$var.'); ?>';
-		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($var), strlen($this->_raw_output_char), strlen($var)-1).'; ?>';
+            // Then map all variables within the codeblock to the view class
+            $code = preg_replace('/\$(?!tmp_|this->)([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]+)/',
+                    '$this->var_$1', $code);
+
+            // If this block is not the special <?= block return
+            if ($matches[1] !== '=')
+            {
+                return '<?php '. $code . '?>';
+            }
+
+            // Remove trailing ; characters
+            $var = trim($code, ';');
+
+            if (substr($var, 0, 1) != $this->_raw_output_char)
+            {
+                return '<?php echo '.$this->_encode_method.'('.$var.'); ?>';
+            }
+            else
+            {
+                // Remove the "turn off escape" character
+                return '<?php echo '.substr($var, strlen($this->_raw_output_char), strlen($var)-1).'; ?>';
+            }
 	}
 
 	/**
